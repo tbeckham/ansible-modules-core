@@ -117,6 +117,7 @@ import time
 try:
     import boto
     import boto.cloudformation.connection
+    from boto.regioninfo import RegionInfo
 except ImportError:
     print "failed=True msg='boto required for this module'"
     sys.exit(1)
@@ -225,13 +226,20 @@ def main():
     template_parameters_tup = [(k, v) for k, v in template_parameters.items()]
     stack_outputs = {}
 
+    # Quick hack to talk to Eucalyptus cloud.
     try:
-        cf_region = Region(region)
-        cfn = boto.cloudformation.connection.CloudFormationConnection(
-                  aws_access_key_id=aws_access_key, 
-                  aws_secret_access_key=aws_secret_key,
-                  region=cf_region,
-              )
+        region = RegionInfo()
+        region.endpoint = "YOUR_CLC_IP_HERE"
+        region.name = "eucalyptus"
+        cfn = boto.connect_cloudformation(region=region, port=8773, path="/services/CloudFormation", is_secure=False,
+                                             aws_access_key_id=aws_access_key,
+                                             aws_secret_access_key=aws_secret_key)
+        # cf_region = Region(region)
+        # cfn = boto.cloudformation.connection.CloudFormationConnection(
+        #           aws_access_key_id=aws_access_key,
+        #           aws_secret_access_key=aws_secret_key,
+        #           region=cf_region,
+        #       )
     except boto.exception.NoAuthHandlerFound, e:
         module.fail_json(msg=str(e))
     update = False
